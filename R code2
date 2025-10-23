@@ -1,0 +1,973 @@
+#read the file
+consumer<-read.csv("C:/Users/heman/Downloads/Consumer_Data.csv")
+
+str(consumer)
+
+summary(consumer)
+#detailed analysis
+
+library(ggplot2)
+#id
+length(unique(consumer$ID)) == nrow(consumer)
+
+#year birth
+# Plot Year_Birth distribution
+ggplot(consumer, aes(x = Year_Birth)) +
+  geom_histogram(binwidth = 1, fill = "lightgreen", color = "black") +
+  labs(title = "Year of Birth Distribution", x = "Year of Birth", y = "Frequency") +
+  theme_minimal()
+
+# Calculate current age
+consumer$Age <- 2025 - consumer$Year_Birth
+
+# Create a new column for Generation with Birth Year and Age Range
+consumer$Generation <- ifelse(consumer$Age >= 98, "Greatest Generation (1901-1927) (98-124)",
+                              ifelse(consumer$Age >= 80, "Silent Generation (1928-1945) (80-97)",
+                                     ifelse(consumer$Age >= 61, "Baby Boomers (1946-1964) (61-79)",
+                                            ifelse(consumer$Age >= 45, "Generation X (1965-1980) (45-60)",
+                                                   ifelse(consumer$Age >= 29, "Millennials (1981-1996) (29-44)", 
+                                                          "Generation Z (1997-Present) (18-28)")))))
+
+
+
+generation123 <- factor(consumer$Generation, 
+                        levels = c(
+                          "Greatest Generation (1901-1927) (98-124)",
+                          "Silent Generation (1928-1945) (80-97)",
+                          "Baby Boomers (1946-1964) (61-79)",
+                          "Generation X (1965-1980) (45-60)",
+                          "Millennials (1981-1996) (29-44)",
+                          "Generation Z (1997-Present) (18-28)"
+                        ))
+
+ggplot(consumer, aes(x = generation123)) +
+  geom_bar(fill = "lightblue", color = "black") +
+  labs(title = "Distribution of Customers by Generation", x = "Generation", y = "Count") +
+  theme_minimal() +
+  geom_text(stat = 'count', aes(label = ..count..), vjust = -0.5) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+table(consumer$Generation)
+
+#################################
+table(consumer$Education)
+
+
+
+# Creating a bar plot for Education distribution
+education_counts <- table(consumer$Education)
+
+barplot(education_counts, 
+        main = "Distribution of Education Levels",
+        col = "skyblue",
+        xlab = "Education Level",
+        ylab = "Number of Customers",
+        las = 2, 
+        cex.names = 0.8)
+
+# Adding labels on top of bars
+text(x = seq_along(education_counts), 
+     y = education_counts, 
+     label = education_counts, 
+     pos = 3, 
+     cex = 0.8, 
+     col = "black")
+
+library(dplyr)
+
+consumer <- consumer %>%
+  mutate(Education = recode(Education, 
+                            "2n Cycle" = "Master", 
+                            "Master" = "Master"))
+
+# Check the result
+table(consumer$Education)
+
+####
+# Create a table of marital status
+marital_status_counts <- table(consumer$Marital_Status)
+
+# Create a bar plot to visualize marital status distribution
+barplot(marital_status_counts,
+        main = "Marital Status Distribution",
+        col = "lightblue",
+        ylab = "Frequency",
+        xlab = "Marital Status",
+        border = "black",
+        las = 2,  # Rotate x-axis labels for better readability
+        ylim = c(0, max(marital_status_counts) + 50))  # Add extra space for labels
+
+# Add labels on top of the bars
+text(x = seq_along(marital_status_counts), 
+     y = marital_status_counts + 10,  # Offset labels above the bars
+     labels = paste(marital_status_counts), 
+     pos = 3, 
+     cex = 1, 
+     col = "black", 
+     font = 2)  # Bold labels
+
+###
+# Remove rows with missing values in the Income column
+consumer <- consumer[!is.na(consumer$Income), ]
+
+# Create income brackets
+consumer$Income_bracket <- cut(consumer$Income, 
+                                     breaks = c(0, 20000, 40000, 60000, 80000, 100000, Inf), 
+                                     labels = c("0-20K", "20K-40K", "40K-60K", "60K-80K", "80K-100K", "100K+"))
+
+table(consumer$Income_bracket)
+# Create the bar chart
+ggplot(consumer, aes(x = Income_bracket)) +
+  geom_bar(fill = "skyblue", color = "black") +
+  geom_text(stat = 'count', aes(label = ..count..), vjust = -0.5, color = "black") +  # Add labels
+  theme_minimal() +
+  labs(title = "Income Bracket Distribution", x = "Income Bracket", y = "Frequency") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+######
+table(consumer$Kidhome)
+# Bar plot for Kidhome distribution
+library(ggplot2)
+
+ggplot(consumer, aes(x = factor(Kidhome))) +
+  geom_bar(fill = "skyblue", color = "black") +
+  theme_minimal() +
+  labs(title = "Distribution of Customers Based on Number of Children at Home", 
+       x = "Number of Children at Home", 
+       y = "Frequency") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  geom_text(stat = 'count', aes(label = ..count..), vjust = -0.5)
+
+########
+# Check the distribution of Teenhome
+table(consumer$Teenhome)
+
+# Visualization for Teenhome distribution
+ggplot(consumer, aes(x = factor(Teenhome))) +
+  geom_bar(fill = "skyblue", color = "black") +
+  theme_minimal() +
+  labs(title = "Distribution of Teenhome (Teenage Children at Home)", 
+       x = "Number of Teenagers at Home", 
+       y = "Frequency") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) 
+
+###########
+library(dplyr)
+# Load necessary library
+library(lubridate)
+
+
+# Load necessary library
+library(lubridate)
+
+# Attempt parsing dates in DD/MM/YYYY format first
+consumer$Dt_Customer <- dmy(consumer$Dt_Customer)
+
+consumer$Dt_Customer
+
+
+# Extract year, month, day, and weekday from the date column
+consumer$Year <- year(consumer$Dt_Customer)
+consumer$Month <- month(consumer$Dt_Customer, label = TRUE) # Label gives month name (e.g., Jan, Feb)
+consumer$Day <- day(consumer$Dt_Customer)
+consumer$Weekday <- weekdays(consumer$Dt_Customer) # Weekday names
+
+
+# Count the number of customers per month
+monthly_counts <- consumer %>%
+  group_by(Month) %>%
+  summarise(CustomerCount = n())
+
+# Plot the number of customers acquired by month
+ggplot(monthly_counts, aes(x = Month, y = CustomerCount)) +
+  geom_bar(stat = "identity", fill = "lightgreen") +
+  labs(title = "Number of Customers Acquired per Month", x = "Month", y = "Number of Customers") +
+  theme_minimal()
+
+
+
+# Count customers by weekday
+weekday_counts <- consumer %>%
+  group_by(Weekday) %>%
+  summarise(CustomerCount = n())
+
+# Reorder weekdays for correct ordering in the plot
+weekday_counts$Weekday <- factor(weekday_counts$Weekday, 
+                                 levels = c("Monday", "Tuesday", "Wednesday", "Thursday", 
+                                            "Friday", "Saturday", "Sunday"))
+
+# Plot the number of customers acquired by weekday
+ggplot(weekday_counts, aes(x = Weekday, y = CustomerCount)) +
+  geom_bar(stat = "identity", fill = "salmon") +
+  labs(title = "Number of Customers Acquired by Weekday", x = "Weekday", y = "Number of Customers") +
+  theme_minimal()
+
+######
+# Histogram to show recency distribution
+library(ggplot2)
+
+ggplot(consumer, aes(x = Recency)) +
+  geom_histogram(bins = 30, fill = "lightblue", color = "black") +
+  theme_minimal() +
+  labs(title = "Recency Distribution of Customers", x = "Days Since Last Purchase", y = "Frequency") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+
+# Create recency bins
+consumer$Recency_Bin <- cut(consumer$Recency, 
+                            breaks = c(-1, 25, 50, 75, 100), 
+                            labels = c("0-25", "25-50", "50-75", "75-100"),
+                            right = TRUE)
+
+# Calculate the count of customers in each bin
+recency_summary <- table(consumer$Recency_Bin)
+
+# Convert to DataFrame for Visualization
+recency_df <- as.data.frame(recency_summary)
+colnames(recency_df) <- c("Recency_Bin", "Count")
+
+# Plot the results using ggplot2
+library(ggplot2)
+ggplot(recency_df, aes(x = Recency_Bin, y = Count, fill = Recency_Bin)) +
+  geom_bar(stat = "identity") +
+  geom_text(aes(label = Count), vjust = -0.5) +
+  labs(title = "Customer Distribution by Recency Bins",
+       x = "Recency (Days Since Last Purchase)",
+       y = "Customer Count") +
+  theme_minimal() +
+  scale_fill_brewer(palette = "Pastel1")
+
+table(consumer$Recency_Bin)
+
+#########3
+library(dplyr)
+library(tidyr)
+
+library(tidyr)
+
+library(ggplot2)
+library(scales)
+
+spending_data <- consumer %>%
+  dplyr::select(MntWines, MntFruits, MntMeatProducts, MntFishProducts, MntSweetProducts, MntGoldProds) %>%
+  tidyr::gather(key = "Product", value = "AmountSpent")
+
+# Create a bar plot to compare spending on different products
+ggplot(spending_data, aes(x = Product, y = AmountSpent, fill = Product)) +
+  geom_bar(stat = "identity") +
+  theme_minimal() +
+  labs(title = "Total Spending Distribution on Different Products",
+       x = "Product Categories", y = "Total Spending (in thousands)") +
+  scale_y_continuous(labels = label_comma(scale = 1e-3, suffix = "k")) +  # Format y-axis labels in "k"
+  scale_fill_brewer(palette = "Set3") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+
+spending_summary <- consumer %>%
+  dplyr::select(MntWines, MntFruits, MntMeatProducts, MntFishProducts, MntSweetProducts, MntGoldProds) %>%
+  tidyr::gather(key = "Product", value = "AmountSpent") %>%
+  dplyr::group_by(Product) %>%
+  dplyr::summarise(TotalSpent = sum(AmountSpent, na.rm = TRUE))
+
+
+# Print the summarized spending values in the console
+print(spending_summary)
+
+
+##############
+# Load necessary libraries
+library(ggplot2)
+library(tidyr)
+
+# Sum the binary values for each category (excluding NumWebVisitsMonth)
+purchase_counts <- colSums(consumer[, c("NumDealsPurchases", "NumWebPurchases", "NumCatalogPurchases", "NumStorePurchases")])
+
+# Create a data frame for plotting
+purchase_data <- data.frame(PurchaseType = names(purchase_counts), Count = purchase_counts)
+
+# Create the bar plot
+ggplot(purchase_data, aes(x = PurchaseType, y = Count, fill = PurchaseType)) +
+  geom_bar(stat = "identity", color = "black") +  # Adding black borders around bars
+  theme_minimal() +
+  labs(title = "Total Counts of Purchase Types",
+       x = "Purchase Type",
+       y = "Total Count") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  scale_fill_manual(values = c("skyblue", "lightgreen", "lightcoral", "lightskyblue")) +  # Assign specific colors to each bar
+  geom_text(aes(label = Count), vjust = -0.5, color = "black")  # Add labels above bars
+
+##########
+# Load necessary library
+library(ggplot2)
+
+# Create a histogram to show the distribution of web visits per month
+ggplot(consumer, aes(x = NumWebVisitsMonth)) +
+  geom_histogram(bins = 20, fill = "skyblue", color = "black") +
+  theme_minimal() +
+  labs(title = "Distribution of Web Visits Per Month", 
+       x = "Number of Web Visits per Month", 
+       y = "Frequency") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+########
+# Create a data frame with the counts of 1s for each marketing campaign
+campaign_success_counts <- data.frame(
+  Campaign = c("Campaign 1", "Campaign 2", "Campaign 3", "Campaign 4", "Campaign 5"),
+  SuccessCount = c(
+    sum(consumer$AcceptedCmp1 == 1, na.rm = TRUE),
+    sum(consumer$AcceptedCmp2 == 1, na.rm = TRUE),
+    sum(consumer$AcceptedCmp3 == 1, na.rm = TRUE),
+    sum(consumer$AcceptedCmp4 == 1, na.rm = TRUE),
+    sum(consumer$AcceptedCmp5 == 1, na.rm = TRUE)
+  )
+)
+
+# Plot the success counts for each campaign
+ggplot(campaign_success_counts, aes(x = Campaign, y = SuccessCount)) +
+  geom_bar(stat = "identity", fill = "skyblue", color = "black") +
+  geom_text(aes(label = SuccessCount), vjust = -0.5, color = "black") +  # Add text labels on top of bars
+  theme_minimal() +
+  labs(title = "Marketing Campaign Success Counts", 
+       x = "Marketing Campaign", 
+       y = "Number of Successes (Accepted)") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+####
+# Load necessary library
+library(ggplot2)
+
+`# Assuming 'consumer' is your dataset
+# Create a bar chart to show the counts of complaints (0 and 1)
+ggplot(consumer, aes(x=factor(Complain))) +
+  geom_bar(fill="skyblue", color="black") +  # Bar chart with colors
+  geom_text(stat='count', aes(label=..count..), vjust=-0.3, size=5) +  # Add counts as labels on top of bars
+  labs(title="Complaint Registration", x="Complaint (0 = No, 1 = Yes)", y="Count") + 
+  theme_minimal()
+table(consumer$Complain)
+
+
+#
+# Load necessary library
+library(ggplot2)
+
+# Sample data (you can replace this with your actual dataset)
+# Assuming 'consumer' is your data frame containing the 'Response' attribute
+# Create a table to summarize the counts of '1' (accepted) and '0' (not accepted)
+response_counts <- table(consumer$Response)
+
+# Convert to data frame for plotting
+response_df <- as.data.frame(response_counts)
+
+# Create a bar chart
+ggplot(response_df, aes(x = factor(Var1), y = Freq, fill = factor(Var1))) +
+  geom_bar(stat = "identity") +  # Create the bar chart
+  geom_text(aes(label = Freq),    # Add labels on top of bars
+            vjust = -0.3,         # Adjust vertical position of the text
+            size = 5) +           # Text size
+  labs(title = "Consumer Response to Last Campaign",
+       x = "Response (0 = Not Accepted, 1 = Accepted)",
+       y = "Count") +
+  scale_x_discrete(labels = c("0" = "Not Accepted", "1" = "Accepted")) +
+  theme_minimal()  # Use minimal theme for cleaner visualization
+
+
+###################################################################################################################
+
+#checking zeros:
+zero_counts <- sapply(consumer, function(x) sum(x == 0, na.rm = TRUE))
+zero_counts
+
+###########################################################################################################
+# missing values:
+colSums(is.na(consumer))
+
+str(consumer)
+
+###################################################################################################################
+#data transformation
+library(dplyr)
+consumer <- consumer %>%
+  mutate(Target_Response = ifelse(AcceptedCmp1 == 1 | AcceptedCmp2 == 1 | AcceptedCmp3 == 1 | AcceptedCmp4 == 1 | AcceptedCmp5 == 1 | Response == 1, 1, 0))
+
+str(consumer)
+####################################################################################################################
+#predictor relavancy for classification model
+library(ggplot2)
+#education vs target reponse
+library(ggplot2)
+
+ggplot(consumer, aes(x = Education, fill = as.factor(Target_Response))) +
+  geom_bar(stat = "count", position = "dodge") +
+  geom_text(stat = "count", aes(label = ..count..), position = position_dodge(width = 0.8), vjust = -0.5) +
+  labs(title = "Education Level vs. Target Response", 
+       x = "Education Level", 
+       y = "Count of Responses", 
+       fill = "Response") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))  # Rotate x-axis labels for better readability
+
+# Create a frequency table for Education vs Target_Response
+edu_response_table <- table(consumer$Education, consumer$Target_Response)
+
+# Display the table
+edu_response_table
+
+
+#martial vs target response
+# Create a table to count responses by Marital Status
+marital_response_table <- table(consumer$Marital_Status, consumer$Target_Response)
+
+# Print the table
+print(marital_response_table)
+
+# Plot the bar chart
+library(ggplot2)
+ggplot(as.data.frame(marital_response_table), aes(x = Var1, fill = factor(Var2))) + 
+  geom_bar(aes(y = Freq), stat = "identity", position = "dodge") +
+  labs(title = "Response by Marital Status",
+       x = "Marital Status", y = "Count") +
+  scale_fill_manual(name = "Target_Response", values = c("0" = "red", "1" = "green"), labels = c("Non-Responder", "Responder")) +
+  theme_minimal()
+
+
+#kids home vs target response
+# Create a table for Kidhome vs Target_Response
+kidhome_response_table <- table(consumer$Kidhome, consumer$Target_Response)
+print(kidhome_response_table)
+
+# Bar plot for Kidhome vs Target_Response with counts and labels
+ggplot(consumer, aes(x = factor(Kidhome), fill = factor(Target_Response))) +
+  geom_bar(stat = "count", position = "dodge") +
+  geom_text(stat = "count", aes(label = ..count..), position = position_dodge(width = 0.8), vjust = -0.5) +
+  labs(title = "Kidhome vs Target Response", x = "Number of Kids at Home", y = "Count") +
+  scale_fill_manual(values = c("red", "blue"), labels = c("Non-Responder", "Responder")) +
+  theme_minimal()
+
+# Create a table for Teenhome vs Target_Response
+teenhome_response_table <- table(consumer$Teenhome, consumer$Target_Response)
+print(teenhome_response_table)
+
+# Bar plot for Teenhome vs Target_Response with counts and labels
+ggplot(consumer, aes(x = factor(Teenhome), fill = factor(Target_Response))) +
+  geom_bar(stat = "count", position = "dodge") +
+  geom_text(stat = "count", aes(label = ..count..), position = position_dodge(width = 0.8), vjust = -0.5) +
+  labs(title = "Teenhome vs Target Response", x = "Number of Teenagers at Home", y = "Count") +
+  scale_fill_manual(values = c("red", "blue"), labels = c("Non-Responder", "Responder")) +
+  theme_minimal()
+
+#
+str(consumer)
+#target
+library(ggplot2)
+library(tidyr)
+library(dplyr)
+
+# Assuming 'consumer' is the data frame containing your data
+
+# Reshape the data to long format for better plotting
+consumer_long <- consumer %>%
+  gather(key = "SpendingCategory", value = "SpendingAmount", 
+         MntWines, MntFruits, MntMeatProducts, MntFishProducts, 
+         MntSweetProducts, MntGoldProds)
+
+# Create the bar plot
+ggplot(consumer_long, aes(x = SpendingCategory, y = SpendingAmount, fill = factor(Target_Response))) +
+  geom_bar(stat = "identity", position = "dodge", width = 0.7) +
+  labs(title = "Spending Categories vs Target Response", 
+       x = "Spending Category", 
+       y = "Spending Amount", 
+       fill = "Target Response") +
+  scale_fill_manual(values = c("red", "blue"), labels = c("Non-Responder", "Responder")) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+
+# Summarize the spending data based on the Target_Response variable
+spending_summary <- consumer %>%
+  select(MntWines, MntFruits, MntMeatProducts, MntFishProducts, 
+         MntSweetProducts, MntGoldProds, Target_Response) %>%
+  gather(key = "SpendingCategory", value = "SpendingAmount", 
+         MntWines, MntFruits, MntMeatProducts, MntFishProducts, 
+         MntSweetProducts, MntGoldProds) %>%
+  group_by(SpendingCategory, Target_Response) %>%
+  summarise(TotalSpending = sum(SpendingAmount, na.rm = TRUE)) %>%
+  spread(key = Target_Response, value = TotalSpending, fill = 0)
+
+# Print the summary table in the console
+print(spending_summary)
+
+####
+# Create tables for each of the variables
+num_deals_response_table <- table(consumer$NumDealsPurchases, consumer$Target_Response)
+num_web_response_table <- table(consumer$NumWebPurchases, consumer$Target_Response)
+num_catalog_response_table <- table(consumer$NumCatalogPurchases, consumer$Target_Response)
+num_store_response_table <- table(consumer$NumStorePurchases, consumer$Target_Response)
+num_web_visits_response_table <- table(consumer$NumWebVisitsMonth, consumer$Target_Response)
+
+# Print the tables to inspect
+print(num_deals_response_table)
+print(num_web_response_table)
+print(num_catalog_response_table)
+print(num_store_response_table)
+print(num_web_visits_response_table)
+
+# Bar plot for NumDealsPurchases vs Target_Response
+ggplot(consumer, aes(x = factor(NumDealsPurchases), fill = factor(Target_Response))) +
+  geom_bar(stat = "count", position = "dodge") +
+  geom_text(stat = "count", aes(label = ..count..), position = position_dodge(width = 0.8), vjust = -0.5) +
+  labs(title = "Number of Deals Purchased vs Target Response", x = "Number of Deals Purchased", y = "Count") +
+  scale_fill_manual(values = c("red", "blue"), labels = c("Non-Responder", "Responder")) +
+  theme_minimal()
+
+# Bar plot for NumWebPurchases vs Target_Response
+ggplot(consumer, aes(x = factor(NumWebPurchases), fill = factor(Target_Response))) +
+  geom_bar(stat = "count", position = "dodge") +
+  geom_text(stat = "count", aes(label = ..count..), position = position_dodge(width = 0.8), vjust = -0.5) +
+  labs(title = "Number of Web Purchases vs Target Response", x = "Number of Web Purchases", y = "Count") +
+  scale_fill_manual(values = c("red", "blue"), labels = c("Non-Responder", "Responder")) +
+  theme_minimal()
+
+# Bar plot for NumCatalogPurchases vs Target_Response
+ggplot(consumer, aes(x = factor(NumCatalogPurchases), fill = factor(Target_Response))) +
+  geom_bar(stat = "count", position = "dodge") +
+  geom_text(stat = "count", aes(label = ..count..), position = position_dodge(width = 0.8), vjust = -0.5) +
+  labs(title = "Number of Catalog Purchases vs Target Response", x = "Number of Catalog Purchases", y = "Count") +
+  scale_fill_manual(values = c("red", "blue"), labels = c("Non-Responder", "Responder")) +
+  theme_minimal()
+
+# Bar plot for NumStorePurchases vs Target_Response
+ggplot(consumer, aes(x = factor(NumStorePurchases), fill = factor(Target_Response))) +
+  geom_bar(stat = "count", position = "dodge") +
+  geom_text(stat = "count", aes(label = ..count..), position = position_dodge(width = 0.8), vjust = -0.5) +
+  labs(title = "Number of Store Purchases vs Target Response", x = "Number of Store Purchases", y = "Count") +
+  scale_fill_manual(values = c("red", "blue"), labels = c("Non-Responder", "Responder")) +
+  theme_minimal()
+
+# Bar plot for NumWebVisitsMonth vs Target_Response
+ggplot(consumer, aes(x = factor(NumWebVisitsMonth), fill = factor(Target_Response))) +
+  geom_bar(stat = "count", position = "dodge") +
+  geom_text(stat = "count", aes(label = ..count..), position = position_dodge(width = 0.8), vjust = -0.5) +
+  labs(title = "Number of Web Visits per Month vs Target Response", x = "Number of Web Visits", y = "Count") +
+  scale_fill_manual(values = c("red", "blue"), labels = c("Non-Responder", "Responder")) +
+  theme_minimal()
+
+
+#complain vs targeted variable
+library(ggplot2)
+
+# Assuming your data frame is called 'consumer'
+ggplot(consumer, aes(x = factor(Complain), fill = factor(Target_Response))) +
+  geom_bar(stat = "count", position = "dodge") +
+  labs(
+    title = "Complaint vs Target Response",
+    x = "Complain (0 = No, 1 = Yes)",
+    y = "Count",
+    fill = "Target Response"
+  ) +
+  scale_x_discrete(labels = c("No Complaint", "Complaint")) +
+  theme_minimal()
+
+table(consumer$Complain, consumer$Target_Response)
+
+
+#generation vs target response
+library(ggplot2)
+
+# Assuming your data frame is called 'consumer'
+ggplot(consumer, aes(x = Generation, fill = factor(Target_Response))) +
+  geom_bar(position = "dodge") +
+  labs(
+    title = "Generation vs Target Response",
+    x = "Generation",
+    y = "Count",
+    fill = "Target Response"
+  ) +
+  theme_minimal()
+table(consumer$Generation, consumer$Target_Response)
+
+str(consumer)
+
+
+#
+library(ggplot2)
+
+ggplot(consumer, aes(x = Recency_Bin, fill = factor(Target_Response))) +
+  geom_bar(position = "dodge") +
+  labs(
+    title = "Recency Bin vs Target Response",
+    x = "Recency Bin",
+    y = "Count",
+    fill = "Target Response"
+  ) +
+  theme_minimal()
+
+table(consumer$Recency_Bin,consumer$Target_Response)
+table(consumer$Income_bracket,consumer$Target_Response)
+
+
+ggplot(consumer, aes(x = Income_bracket, fill = factor(Target_Response))) +
+  geom_bar(position = "dodge") +
+  labs(
+    title = "Income Bracket vs Target Response",
+    x = "Income Bracket",
+    y = "Count",
+    fill = "Target Response"
+  ) +
+  theme_minimal()
+
+######################################################################################
+
+#dimension reduction 
+# for classification
+# Load necessary library
+library(dplyr)
+
+# Remove redundant, high-cardinality, and non-contributory features for classification
+consumer_classification <- consumer %>%
+  select(-c(ID, Year_Birth, Income, Dt_Customer, Recency, Response, 
+            AcceptedCmp1, AcceptedCmp2, AcceptedCmp3, AcceptedCmp4, AcceptedCmp5, Day, Year, Z_CostContact, Z_Revenue,Age
+            ))
+
+# Display structure of the cleaned dataset for classification# Display structure of theYear_Birth cleaned dataset for classification
+str(consumer_classification)
+
+#for clsutering
+# Load necessary library
+library(dplyr)
+
+# Remove features that do not contribute meaningfully to clustering
+consumer_clustering <- consumer %>%
+  select(-c(ID, Year_Birth, Z_CostContact, Z_Revenue, Dt_Customer, Day, Month, Weekday,Age,Year, 
+            Income, Recency, Complain, Month, Weekday,Recency_Bin ))
+
+# Display structure of the cleaned dataset for clustering
+str(consumer_clustering)
+
+
+##################################################################################################################
+
+
+############################################################################
+#data partition
+str(consumer_classification)
+
+# Load the caret package
+library(caret)
+
+# Set the seed for reproducibility
+set.seed(123)
+
+# Convert categorical attributes to factors if they're not already
+# (Assuming all categorical columns should be factors, except the target variable)
+categorical_columns <- c("Education", "Marital_Status", "Generation", "Income_bracket", 
+                         "Month", "Weekday", "Recency_Bin")  # Modify if you have more categorical columns
+
+consumer_classification[categorical_columns] <- lapply(consumer_classification[categorical_columns], factor)
+
+# Create training indices (70% of the data)
+train_index <- createDataPartition(consumer_classification$Target_Response, p = 0.7, list = FALSE)
+train_data <- consumer_classification[train_index, ]
+
+# Remaining 30% of the data
+remaining_data <- consumer_classification[-train_index, ]
+
+# Split the remaining data into validation and testing sets (each 15% of the original data)
+validation_index <- createDataPartition(remaining_data$Target_Response, p = 0.5, list = FALSE)
+test_data <- remaining_data[validation_index, ]
+validation_data <- remaining_data[-validation_index, ]
+
+# Output the dimensions of each dataset
+cat("Dimensions of Training Set: ", dim(train_data), "\n")
+cat("Dimensions of Validation Set: ", dim(validation_data), "\n")
+cat("Dimensions of Testing Set: ", dim(test_data), "\n")
+
+# Proportion of Target_Response in each dataset
+train_target_proportion <- mean(train_data$Target_Response == 1) * 100
+validation_target_proportion <- mean(validation_data$Target_Response == 1) * 100
+test_target_proportion <- mean(test_data$Target_Response == 1) * 100
+
+# Output the proportion of Target_Response in each dataset
+cat("Proportion of Target_Response in Training Set: ", train_target_proportion, "%\n")
+cat("Proportion of Target_Response in Validation Set: ", validation_target_proportion, "%\n")
+cat("Proportion of Target_Response in Testing Set: ", test_target_proportion, "%\n")
+
+
+
+
+################################################################################
+# Fit logistic regression model
+model <- glm(Target_Response ~ ., data = train_data, family = binomial, control = glm.control(maxit = 100))
+
+# Model summary
+summary(model)
+
+# Predict probabilities for the validation set
+predicted_probs <- predict(model, newdata = validation_data, type = "response")
+
+# Predict the classes (0 or 1) based on a threshold of 0.5
+predicted_classes <- ifelse(predicted_probs >= 0.5, 1, 0)
+
+# Create confusion matrix
+confusion_matrix <- table(Predicted = predicted_classes, Actual = validation_data$Target_Response)
+print(confusion_matrix)
+
+# Calculate confusion matrix and performance metrics
+confusionMatrix(as.factor(predicted_classes), as.factor(validation_data$Target_Response), positive = "1")
+
+
+################################################################################
+# Load the ranger package
+library(ranger)
+
+# Train the random forest model with ranger
+rf_model_ranger <- ranger(Target_Response ~ ., 
+                          data = train_data, 
+                          num.trees = 100, 
+                          importance = 'impurity')
+
+# View model summary
+print(rf_model_ranger)
+
+# Predict probabilities using the trained random forest model
+predicted_probs_ranger <- predict(rf_model_ranger, data = validation_data, type = "response")$predictions
+
+# Convert the probabilities to class labels (0 or 1) using a threshold of 0.5
+predicted_classes_ranger <- ifelse(predicted_probs_ranger >= 0.5, 1, 0)
+
+# Create confusion matrix
+confusion_matrix_ranger <- table(Predicted = predicted_classes_ranger, Actual = validation_data$Target_Response)
+print(confusion_matrix_ranger)
+
+# Calculate confusion matrix and performance metrics
+confusionMatrix(as.factor(predicted_classes_ranger), as.factor(validation_data$Target_Response), positive = "1")
+
+# Get the feature importance
+importance_scores <- rf_model_ranger$variable.importance
+
+# Print feature importance scores
+print(importance_scores)
+
+# Sort the importance scores in descending order
+importance_sorted <- sort(importance_scores, decreasing = TRUE)
+
+# Print sorted importance scores
+print(importance_sorted)
+
+# Visualize the feature importance
+library(ggplot2)
+importance_df <- data.frame(Feature = names(importance_sorted), Importance = importance_sorted)
+
+ggplot(importance_df, aes(x = reorder(Feature, Importance), y = Importance)) +
+  geom_bar(stat = "identity") +
+  coord_flip() +
+  xlab("Feature") +
+  ylab("Importance") +
+  ggtitle("Feature Importance in Random Forest")
+##############################################################################
+
+##########################################################################################
+#clustering model selection
+str(consumer_clustering)
+
+library(fastDummies)
+
+# Creating Dummies for selected categorical variables
+Consumer_numerics_c <- dummy_cols(
+  consumer_clustering,
+  select_columns = c("Education", "Marital_Status", "Generation", "Income_bracket"),
+  remove_first_dummy = FALSE,
+  remove_selected_columns = TRUE
+)
+
+# Scaling all features using z-score normalization
+Consumer_Data_scaled <- as.data.frame(lapply(Consumer_numerics_c, scale))
+
+
+library(factoextra)
+
+# Visualizing Within-Cluster Sum of Squares for different k
+fviz_nbclust(Consumer_Data_scaled, kmeans, method = "wss") +
+  labs(title = "Elbow Method for Optimal K")
+
+
+library(cluster)
+
+# Compute silhouette scores for K = 2 to 10
+set.seed(23)
+silhouette_scores <- sapply(2:10, function(k) {
+  km <- kmeans(Consumer_Data_scaled, centers = k, nstart = 10)
+  sil <- silhouette(km$cluster, dist(Consumer_Data_scaled))
+  mean(sil[, 3])
+})
+
+# Plot Silhouette scores
+library(ggplot2)
+
+silhouette_plot <- data.frame(K = 2:10, Silhouette = silhouette_scores)
+ggplot(silhouette_plot, aes(x = K, y = Silhouette)) +
+  geom_line() +
+  geom_point() +
+  labs(title = "Silhouette Score for Optimal K", x = "Number of Clusters", y = "Silhouette Score") +
+  theme_minimal()
+
+# K-means with 3 clusters (based on elbow/silhouette)
+set.seed(175)
+model_kmeans <- kmeans(Consumer_Data_scaled, centers = 3)
+
+
+# View cluster sizes
+model_kmeans$size
+
+# Add cluster label to scaled data
+Consumer_c_interpret <- Consumer_Data_scaled
+Consumer_c_interpret$Cluster <- model_kmeans$cluster
+
+# Compute centroids
+centroids <- aggregate(. ~ Cluster, data = Consumer_c_interpret, mean)
+print(centroids)
+
+########3
+#heirarcical clustering
+# Compute distance matrix
+d <- dist(Consumer_Data_scaled)
+
+# Perform hierarchical clustering
+hc_model <- hclust(d, method = "ward.D2")
+
+# Plot dendrogram
+plot(hc_model, main = "Dendrogram - Hierarchical Clustering")
+rect.hclust(hc_model, k = 3, border = "red")
+
+# Cut the tree into 3 clusters
+hc_clusters <- cutree(hc_model, k = 3)
+
+# Silhouette plot for hierarchical clustering
+sil_hc <- silhouette(hc_clusters, d)
+
+
+# Add cluster labels to data
+Consumer_hc_interpret <- Consumer_Data_scaled
+Consumer_hc_interpret$Cluster <- hc_clusters
+
+# Calculate centroids
+hc_centroids <- aggregate(. ~ Cluster, data = Consumer_hc_interpret, FUN = mean)
+print(hc_centroids)
+
+# Plot silhouette
+fviz_silhouette(sil_hc, label = TRUE, palette = "jco", ggtheme = theme_classic())
+
+library(reshape2)
+centroids_hc_long <- melt(hc_centroids, id.vars = "Cluster", variable.name = "Feature", value.name = "Centroid_Value")
+
+###
+library(cluster)
+library(factoextra)
+
+# ----- K-MEANS SILHOUETTE PLOT -----
+
+# Calculate silhouette for K-Means (3 clusters)
+sil_kmeans <- silhouette(model_kmeans$cluster, dist(Consumer_Data_scaled))
+
+# Plot silhouette for K-Means
+fviz_silhouette(sil_kmeans, 
+                label = TRUE, 
+                palette = "jco", 
+                ggtheme = theme_classic(),
+                title = "Silhouette Plot - K-Means Clustering")
+
+# ----- HIERARCHICAL SILHOUETTE PLOT -----
+
+# Calculate silhouette for Hierarchical clustering (3 clusters)
+sil_hc <- silhouette(hc_clusters, dist(Consumer_Data_scaled))
+
+# Plot silhouette for Hierarchical Clustering
+fviz_silhouette(sil_hc, 
+                label = TRUE, 
+                palette = "jco", 
+                ggtheme = theme_classic(),
+                title = "Silhouette Plot - Hierarchical Clustering")
+
+###
+
+##########
+# Load libraries
+library(ggplot2)
+library(reshape2)
+
+# --- K-MEANS CENTROIDS ---
+
+# Melt full K-Means centroid data for plotting
+centroids_km_long_all <- melt(centroids, id.vars = "Cluster")
+
+# Plot all features for K-Means
+ggplot(centroids_km_long_all, aes(x = variable, y = value, fill = as.factor(Cluster))) +
+  geom_bar(stat = "identity", position = "dodge") +
+  labs(title = "K-Means Cluster Centroids (All Variables)",
+       x = "Feature", y = "Standardized Value (Z-score)", fill = "Cluster") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1, size = 7))
+
+# --- HIERARCHICAL CLUSTERING CENTROIDS ---
+
+# Melt full Hierarchical centroid data for plotting
+centroids_hc_long_all <- melt(hc_centroids, id.vars = "Cluster")
+
+# Plot all features for Hierarchical Clustering
+ggplot(centroids_hc_long_all, aes(x = variable, y = value, fill = as.factor(Cluster))) +
+  geom_bar(stat = "identity", position = "dodge") +
+  labs(title = "Hierarchical Cluster Centroids (All Variables)",
+       x = "Feature", y = "Standardized Value (Z-score)", fill = "Cluster") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1, size = 7))
+
+#########################
+#model improvement 
+# Predict probabilities for the test set using the trained random forest model
+rf_predicted_probs <- predict(rf_model_ranger, data = test_data, type = "response")$predictions
+
+# Convert probabilities to class labels using a threshold of 0.4
+rf_predicted_classes <- ifelse(rf_predicted_probs >= 0.4, 1, 0)
+
+# Confusion matrix table
+confusion_matrix_rf <- table(Predicted = rf_predicted_classes, Actual = test_data$Target_Response)
+(confusion_matrix_rf)
+
+# Evaluate performance
+library(caret)
+confusionMatrix(as.factor(rf_predicted_classes), as.factor(test_data$Target_Response), positive = "1")
+
+########################
+# Set seed for reproducibility
+set.seed(175)
+
+# Define nstart values
+nstart_values <- c(10, 25, 50, 100)
+
+# Create an empty list to store silhouette results
+silhouette_results <- list()
+
+# Loop through different nstart values
+for (nstart_value in nstart_values) {
+  # Perform K-Means clustering with the current nstart value
+  model_kmeans <- kmeans(Consumer_Data_scaled, centers = 3, nstart = nstart_value)
+  
+  # Calculate silhouette
+  sil_kmeans <- silhouette(model_kmeans$cluster, dist(Consumer_Data_scaled))
+  
+  # Store silhouette data
+  silhouette_results[[paste("nstart =", nstart_value)]] <- summary(sil_kmeans)
+}
+
+# Create a data frame to summarize silhouette scores
+silhouette_summary <- data.frame(
+  nstart = nstart_values,
+  avg_silhouette = sapply(silhouette_results, function(res) res$avg.width)
+)
+
+# Print the summary table
+print(silhouette_summary)
+
+
+
+
+
